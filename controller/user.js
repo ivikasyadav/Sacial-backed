@@ -1,5 +1,4 @@
 const User = require('../models/User');
-// const User = require('../models/User');
 const { notifyUserById } = require('../socket/socket');
 
 exports.getAllUsers = async (req, res) => {
@@ -27,7 +26,6 @@ exports.followUser = async (req, res) => {
             return res.status(400).json({ message: 'Can only follow users with role "celebrity".' });
         }
 
-        // Avoid duplicates
         if (!currentUser.following.includes(targetUserId)) {
             currentUser.following.push(targetUserId);
             targetUser.followers.push(currentUserId);

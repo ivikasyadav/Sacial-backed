@@ -1,6 +1,3 @@
-// const Post = require('../models/Post');
-// const User = require('../models/User');
-// const { notifyFollowers } = require('../socket/socket');
 const { notifyFollowers, broadcastToAllClients } = require('../socket/socket');
 const fs = require('fs');
 const path = require('path');
@@ -37,6 +34,7 @@ exports.getCelebrityPosts = async (req, res) => {
     const posts = await Post.find({ celebrityId: req.user.id }).sort('-createdAt');
     res.json(posts);
 };
+
 exports.getFeed = async (req, res) => {
     try {
         const user = await User.findById(req.user.id);
@@ -47,7 +45,7 @@ exports.getFeed = async (req, res) => {
 
         const posts = await Post.find({ celebrityId: { $in: followingIds } })
             .sort('-createdAt')
-            .populate('celebrityId', 'name'); // ✅ only include the name field
+            .populate('celebrityId', 'name');
 
         console.log("Posts found:", posts);
 
@@ -90,7 +88,7 @@ exports.updatePost = async (req, res) => {
 };
 
 
-// Delete a post
+// Delete  post
 exports.deletePost = async (req, res) => {
     try {
         const { id } = req.params;
@@ -128,24 +126,25 @@ exports.getMixedCelebrityFeed = async (req, res) => {
         const followingIds = user.following.map(id => new mongoose.Types.ObjectId(id));
         const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
 
-        // 1. Recent posts from followed celebrities
         const followedRecentPosts = await Post.find({
             celebrityId: { $in: followingIds },
             createdAt: { $gte: fifteenMinutesAgo },
-        }).sort('-createdAt');
+        })
+            .sort('-createdAt')
+            .populate('celebrityId', 'name');
 
         const followedRecentPostIds = followedRecentPosts.map(post => post._id);
 
-        // 2. Remaining celebrity posts (excluding already fetched ones)
         const allCelebrityUsers = await User.find({ role: 'celebrity' }).select('_id');
         const allCelebrityIds = allCelebrityUsers.map(u => u._id);
 
         const remainingPosts = await Post.find({
             celebrityId: { $in: allCelebrityIds },
             _id: { $nin: followedRecentPostIds },
-        }).sort('-createdAt').limit(50);
-
-        // 3. Combine feed: new followed first, then all others
+        })
+            .sort('-createdAt')
+            .limit(50)
+            .populate('celebrityId', 'name');
         const mixedFeed = [...followedRecentPosts, ...remainingPosts];
 
         res.status(200).json(mixedFeed);
@@ -154,12 +153,13 @@ exports.getMixedCelebrityFeed = async (req, res) => {
         res.status(500).json({ error: 'Failed to fetch mixed feed' });
     }
 };
-
-// Get posts by any celebrity ID (used after follow)
 exports.getPostsByCelebrityId = async (req, res) => {
     const { userId } = req.params;
     try {
-        const posts = await Post.find({ celebrityId: userId }).sort('-createdAt');
+        const posts = await Post.find({ celebrityId: userId })
+            .sort('-createdAt')
+            .populate('celebrityId', 'name'); 
+
         res.status(200).json(posts);
     } catch (err) {
         console.error('Failed to get posts for celebrity:', err);

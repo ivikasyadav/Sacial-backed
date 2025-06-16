@@ -19,12 +19,11 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// Routes
 router.post('/', verifyToken, upload.single('image'), createPost);
 router.get('/self', verifyToken, getCelebrityPosts);
 router.get('/feed', verifyToken, getFeed);
-router.put('/:id', verifyToken, upload.single('image'), updatePost); // Update post by ID
-router.delete('/:id', verifyToken, deletePost); // Delete post by ID
+router.put('/:id', verifyToken, upload.single('image'), updatePost); 
+router.delete('/:id', verifyToken, deletePost); 
 router.get('/feed/mixed', verifyToken, getMixedCelebrityFeed);
 router.get('/by/:userId', verifyToken, getPostsByCelebrityId);
 

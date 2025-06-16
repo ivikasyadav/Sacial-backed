@@ -1,4 +1,3 @@
-// sockets/socket.js
 const { Server } = require("socket.io");
 
 let io;
@@ -40,7 +39,8 @@ const notifyFollowers = (followers, post) => {
         }
     });
 };
-// inside socket/socket.js
+
+
 const notifyUserById = (userId, payload) => {
     const socketId = connectedUsers[userId];
     if (socketId && io) {

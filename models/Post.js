@@ -8,7 +8,7 @@ const commentSchema = new mongoose.Schema({
 
 const postSchema = new mongoose.Schema({
     caption: { type: String },
-    image: { type: String }, // saved filename
+    image: { type: String }, 
     celebrityId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     likes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     comments: [commentSchema],
