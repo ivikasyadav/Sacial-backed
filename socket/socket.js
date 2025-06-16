@@ -1,64 +1,72 @@
-const { Server } = require("socket.io");
-
 let io;
-const connectedUsers = {};
+const connectedUsers = new Map();
 
 const initSocket = (server) => {
-    io = new Server(server, {
+    io = require('socket.io')(server, {
         cors: {
-            origin: "http://localhost:5173",
-            methods: ["GET", "POST"],
-        },
+            origin: process.env.CLIENT_URL || 'http://localhost:5173', 
+            methods: ["GET", "POST"]
+        }
     });
 
-    io.on("connection", (socket) => {
-        console.log("A user connected:", socket.id);
+    io.on('connection', (socket) => {
+        console.log(`A user connected: ${socket.id}`);
 
-        socket.on("join", (userId) => {
-            connectedUsers[userId] = socket.id;
+        socket.on('join', (userId) => {
             console.log(`User ${userId} joined with socket ${socket.id}`);
+            const userSockets = connectedUsers.get(userId) || [];
+            if (!userSockets.includes(socket.id)) {
+                userSockets.push(socket.id);
+            }
+            connectedUsers.set(userId, userSockets);
+
+            socket.userId = userId;
         });
 
-        socket.on("disconnect", () => {
-            for (let userId in connectedUsers) {
-                if (connectedUsers[userId] === socket.id) {
-                    delete connectedUsers[userId];
-                    console.log(`User ${userId} disconnected`);
-                    break;
+        socket.on('disconnect', () => {
+            console.log(`User disconnected: ${socket.id}`);
+            if (socket.userId) {
+                const userSockets = connectedUsers.get(socket.userId);
+                if (userSockets) {
+                    const updatedSockets = userSockets.filter(id => id !== socket.id);
+                    if (updatedSockets.length === 0) {
+                        connectedUsers.delete(socket.userId);
+                    } else {
+                        connectedUsers.set(socket.userId, updatedSockets);
+                    }
                 }
             }
         });
     });
 };
 
-const notifyFollowers = (followers, post) => {
-    followers.forEach((followerId) => {
-        const socketId = connectedUsers[followerId];
-        if (socketId && io) {
-            io.to(socketId).emit("new-post", post);
+const getIo = () => {
+    if (!io) {
+        throw new Error('Socket.io not initialized!');
+    }
+    return io;
+};
+
+const notifyFollowers = (followerIds, data) => {
+    const io = getIo();
+    followerIds.forEach(followerId => {
+        const sockets = connectedUsers.get(followerId); 
+        if (sockets && sockets.length > 0) {
+            sockets.forEach(socketId => {
+                io.to(socketId).emit('new-post', data); 
+            });
         }
     });
 };
 
-
-const notifyUserById = (userId, payload) => {
-    const socketId = connectedUsers[userId];
-    if (socketId && io) {
-        io.to(socketId).emit('user-event', payload);
-    }
+const broadcastToAllClients = (data) => {
+    const io = getIo();
+    io.emit('new-post', data);
 };
-function broadcastToAllClients(event, data) {
-    connectedUsers.forEach(socket => {
-        socket.emit(event, data);
-    });
-}
 
 module.exports = {
     initSocket,
-    notifyUserById,
+    getIo,
     notifyFollowers,
     broadcastToAllClients,
-    connectedUsers,
 };
-
-
