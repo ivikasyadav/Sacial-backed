@@ -15,7 +15,15 @@ require('dotenv').config();
 const app = express();
 const server = http.createServer(app);
 
-app.use(cors({ origin: '*'}));
+const allowedOrigin = "https://social-zwmd.vercel.app";
+
+const corsOptions = {
+    origin: allowedOrigin,
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE"]
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(cookieParser());
 
