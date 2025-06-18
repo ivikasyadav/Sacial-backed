@@ -4,7 +4,7 @@ const connectedUsers = new Map();
 const initSocket = (server) => {
     io = require('socket.io')(server, {
         cors: {
-            origin: process.env.CLIENT_URL || 'http://localhost:5173', 
+            origin: process.env.CLIENT_URL, 
             methods: ["GET", "POST"]
         }
     });
